@@ -1,172 +1,45 @@
 <?php
 
 class RCP_Taxamo_Public {
-	public function __construct() {
-		add_action( 'wp_enqueue_scripts', array($this, 'scripts') );
-		add_action( 'wp_footer', array($this, 'initialize_taxamo_js'), 30 );
 
+	public function __construct() {
+
+		add_action( 'wp_enqueue_scripts', array($this, 'scripts') );
+
+		// Add VAT fields to User Forms.
 		add_action( 'rcp_before_subscription_form_fields', array( $this, 'vat_fields' ) );
 		add_action( 'rcp_profile_editor_after', array( $this, 'vat_fields' ) );
 
-
-
-		// Process User Forms, Check For Errors, Update User Meta for Country & VAT #.
-		add_action( 'rcp_form_errors', array( $this, 'error_checks' ) );
+		// Process User Forms, Update User Meta for Country & VAT #.
 		add_filter( 'rcp_subscription_data', array( $this, 'subscription_data' ) );
 		add_action( 'rcp_user_profile_updated', array( $this, 'user_profile_update' ), 10, 2 );
+		
 	}
-
-	public function user_profile_update( $user_id, $userdata ) {
-
-		$country = ! empty( $_POST['rcp_country'] ) ? sanitize_text_field( $_POST['rcp_country'] ) : '';
-		$vat_number   = ! empty( $_POST['rcp_vat_number'] )   ? sanitize_text_field( $_POST['rcp_vat_number'] ) : '';
-
-		if ( empty( $country ) ) {
-			rcp_errors()->add( 'empty_country', __( 'Please select a valid billing country', 'rcp-taxamo' ) );
-		}
-
-		update_user_meta( $user_id, 'rcp_country', $country );
-		update_user_meta( $user_id, 'rcp_vat_number', $vat_number );
-
-	}
-
 
 	public function scripts() {
+
 		global $rcp_options;
 
 		wp_register_script( 'taxamo', 'https://api.taxamo.com/js/v1/taxamo.all.js', array(), '1' );
-		if(is_page($rcp_options['registration_page'])) {
-			wp_enqueue_script( 'taxamo' );
+		wp_register_script( 'rcp-taxamo', RCP_TAXAMO_PLUGIN_URL . 'assets/scripts/rcp-taxamo.min.js', array('jquery', 'taxamo'), '1', true );
+
+		if( is_page($rcp_options['registration_page']) && !empty($rcp_options['taxamo_public_token']) ) {
+			wp_enqueue_script( 'rcp-taxamo' );
+			wp_localize_script('rcp-taxamo', 'rcp_taxamo_vars', array(
+					'taxamo_public_token' => $rcp_options['taxamo_public_token'],
+					'currency' => $rcp_options['currency'],
+					'priceTemplate' => !empty($rcp_options['taxamo_price_template']) ? $rcp_options['taxamo_price_template'] : __('${totalAmount} (${taxRate}% tax)', 'rcp-taxamo'),
+					'noTaxTitle' => !empty($rcp_options['taxamo_no_tax_title']) ? $rcp_options['taxamo_no_tax_title'] : __('No tax applied in this location', 'rcp-taxamo'),
+					'taxTitle' => !empty($rcp_options['taxamo_tax_title']) ? $rcp_options['taxamo_tax_title'] : __('Original amount: ${amount}, tax rate: ${taxRate}%', 'rcp-taxamo'),
+					'priceClass' => !empty($rcp_options['taxamo_price_class']) ? '.' . $rcp_options['taxamo_price_class'] : '.rcp_price',
+				)
+			);
 		}
-	}
 
-	public function initialize_taxamo_js() {
-		global $rcp_options;
-		if(is_page($rcp_options['registration_page'])) {
-			$priceTemplate = !empty($rcp_options['taxamo_price_template']) ? $rcp_options['taxamo_price_template'] : __('${totalAmount} (${taxRate}% tax)', 'rcp-taxamo');
-			$noTaxTitle = !empty($rcp_options['taxamo_no_tax_title']) ? $rcp_options['taxamo_no_tax_title'] : __('No tax applied in this location', 'rcp-taxamo');
-			$taxTitle = !empty($rcp_options['taxamo_tax_title']) ? $rcp_options['taxamo_tax_title'] : __('Original amount: ${amount}, tax rate: ${taxRate}%', 'rcp-taxamo');
-			$priceClass = !empty($rcp_options['taxamo_price_class']) ? $rcp_options['taxamo_price_class'] : '.rcp_price';
-		 ?>
-			<script type="text/javascript">
-				(function () {
-					var taxamo_public_token = '<?php echo $rcp_options['taxamo_public_token'];?>',
-						default_currency_code = '<?php echo $rcp_options['currency'];?>',
-						country = jQuery('#rcp_country'),
-						vat_number = jQuery('#rcp_vat_number'),
-						card_number = jQuery('input.card-number'),
-						priceClass = '<?php echo $priceClass;?>',
-						transaction,
-						taxamo_check = false,
-						current_member_option;
-
-					/**
-					* Pricing Template Defaults
-					*/
-					Taxamo.options.scanPrices.priceTemplate = "<?php echo $priceTemplate;?>";
-					Taxamo.options.scanPrices.noTaxTitle    = "<?php echo $noTaxTitle;?>"
-					Taxamo.options.scanPrices.taxTitle      = "<?php echo $taxTitle;?>";
-					Taxamo.subscribe('taxamo.country.selected', function (data) {
-						jQuery('.rcp_subscription_fieldset').css({opacity: 0.25});
-						setTimeout(function () {
-							jQuery('.rcp_subscription_fieldset').animate({opacity: 1}, 500);
-						}, 2000);
-					});
-
-					/**
-					* Initialize Taxamo with Public Token, Set default store currency, scan prices & detect country.
-					*/
-					Taxamo.initialize(taxamo_public_token);
-					Taxamo.setCurrencyCode(default_currency_code);
-					Taxamo.scanPrices(priceClass);
-					Taxamo.detectCountry();
-
-					jQuery(document)
-						.ready(function () {
-							Taxamo.setBillingCountry(jQuery('#rcp_country').val());
-							Taxamo.setTaxNumber(jQuery('#rcp_vat_number').val());
-						});
-					/**
-					* Register Event Listeners
-					*/
-					jQuery(document)
-						/**
-						* Update the billing country when user chooses a country.
-						*/
-						.on('change', '#rcp_country', function () {
-							Taxamo.setBillingCountry(jQuery(this).val());
-						})
-						/**
-						* Update the billing card number or vat number when user leaves the input.
-						*/
-						.on('focusout', '.card-number, #rcp_vat_number', function () {
-							var $this = jQuery(this);
-							if($this.hasClass('card-number')) {
-								Taxamo.setCreditCardPrefix(jQuery(this).val().substring(0, 9))
-							}
-							else {
-								Taxamo.setTaxNumber(jQuery(this).val());		
-							}
-						})
-						/**
-						* Before submitting the form create & store a transaction with taxamo,
-						* then saving the taxamo transaction key in a hidden form field with the total amount.
-						*/
-						.on('submit', '#rcp_registration_form', function (event) {
-							var $this = jQuery(this),
-								option = jQuery('input[type="radio"][name="rcp_level"]').filter(':checked').parents('.rcp_subscription_level'),
-								transaction = Taxamo.transaction()
-									.currencyCode(default_currency_code);
-									/*
-									.customId('order1414556')
-									.description('order #1414556')
-									*/
-
-							if(taxamo_check) {
-								return;
-							}
-							event.preventDefault();
-
-							if (country.length && country.val() !== '') {
-								transaction
-									.buyerCountryCode(country.val())
-									.forceCountryCode(country.val());
-							}
-							if (vat_number.length && vat_number.val() !== '') {
-								transaction.buyerTaxNumber(vat_number.val());
-							}
-							if (card_number.length && card_number.val() !== '') {
-								transaction.buyerCardNumberPrefix(card_number.val().substring(0, 9))
-							}
-
-							transaction
-								.transactionLine('line1') //first line
-									.amount(parseInt(jQuery(priceClass, option).attr('taxamo-amount')))
-									//.totalAmount( parseInt( jQuery('.rcp_price', option).attr('taxamo-amount') ) )
-									.description(jQuery('.rcp_subscription_level_name', option).text())
-									.productType('default')
-									.done(); //go back to transaction context
-
-							Taxamo.storeTransaction(
-								transaction,
-								function (data) { //success handler, you should place more complex logic here
-									jQuery('#rcp_taxamo_transaction_key').val(data.transaction.key);
-									jQuery('#rcp_taxamo_tax_supported').val(data.transaction.tax_supported);
-									jQuery('#rcp_taxamo_total_amount').val(data.transaction.total_amount);
-									//taxamo_check = true;
-									//$this.trigger('submit');
-								},
-								function (data) { //error handler, you should place more complex logic here
-									console.log(data);
-								}
-							);
-						});
-				}());
-			</script><?php
-		}
 	}
 
 	public function vat_fields( $user_id = NULL ) {
+
 		if( !$user_id ) {
 			$user_id = get_current_user_id();
 		}
@@ -191,15 +64,21 @@ class RCP_Taxamo_Public {
 				<input name="rcp_vat_number" id="rcp_vat_number" type="text" value="<?php echo esc_attr( $user_vat_number );?>" />
 			</p>
 		</fieldset><?php
+
 	}
 
-	public function error_checks( $data ) {
-		if( empty( $data['rcp_country'] ) ) {
-			rcp_errors()->add( 'empty_country', __( 'Please select your country', 'rcp-taxamo' ), 'register' );
-		}
-	} 
+	public function user_profile_update( $user_id, $userdata ) {
+
+		$country = ! empty( $_POST['rcp_country'] ) ? sanitize_text_field( $_POST['rcp_country'] ) : '';
+		$vat_number   = ! empty( $_POST['rcp_vat_number'] )   ? sanitize_text_field( $_POST['rcp_vat_number'] ) : '';
+
+		update_user_meta( $user_id, 'rcp_country', $country );
+		update_user_meta( $user_id, 'rcp_vat_number', $vat_number );
+
+	}
 
 	public function subscription_data( $subscription_data ) {
+
 		$subscription_data['country'] = sanitize_text_field( $_POST['rcp_country'] );
 		$subscription_data['vat_number'] = sanitize_text_field( $_POST['rcp_vat_number'] );
 		$subscription_data['taxamo_transaction_key'] = sanitize_text_field( $_POST['rcp_taxamo_transaction_key'] );
@@ -210,11 +89,13 @@ class RCP_Taxamo_Public {
 		update_user_meta( $subscription_data['user_id'], 'rcp_taxamo_transaction_key', $subscription_data['taxamo_transaction_key'] );
 
 		return $subscription_data;
+
 	}
 
 	public function get_countries() {
+
 		$countries = array(
-			''	 => __('Select Your Billing Country', 'rcp-taxamo'),
+			''	 => __( 'Select Your Billing Country', 'rcp-taxamo' ),
 			'US' => 'United States',
 			'CA' => 'Canada',
 			'GB' => 'United Kingdom',
@@ -460,6 +341,7 @@ class RCP_Taxamo_Public {
 			'ZM' => 'Zambia',
 			'ZW' => 'Zimbabwe'
 		);
-		return $countries;
+		return apply_filters( 'rcp_taxamo_country_options', $countries );
+
 	} 
 }
