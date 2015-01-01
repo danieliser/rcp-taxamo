@@ -1,3 +1,0 @@
-[submodule "includes/libraries/taxamp-php"]
-	path = includes/libraries/taxamp-php
-	url = https://github.com/taxamo/taxamo-php.git
