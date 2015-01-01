@@ -39,7 +39,7 @@ class RCP_Taxamo_Payments {
 		global $rcp_options;
 		$paypal_args['country'] = $subscription_data['country'];
 		if(!class_exists('Taxamo'))
-			require RCP_TAXAMO_PLUGIN_DIR . '/includes/libraries/taxamo-php/lib/Taxamo.php';
+			require RCP_TAXAMO_PLUGIN_DIR . 'includes/libraries/taxamo-php/lib/Taxamo.php';
 
 		$user_id         = $subscription_data['user_id'];
 		$user_payments   = rcp_get_user_payments( $user_id );

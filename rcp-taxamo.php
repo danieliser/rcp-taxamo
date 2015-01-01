@@ -10,10 +10,10 @@ Contributors: danieliser, mordauk
 */
 
 if ( !defined( 'RCP_TAXAMO_PLUGIN_DIR' ) ) {
-	define( 'RCP_TAXAMO_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
+	define( 'RCP_TAXAMO_PLUGIN_DIR', plugin_dir_path( __FILE__ ) . '/' );
 }
 if ( !defined( 'RCP_TAXAMO_PLUGIN_URL' ) ) {
-	define( 'RCP_TAXAMO_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
+	define( 'RCP_TAXAMO_PLUGIN_URL', plugin_dir_url( __FILE__ ) . '/' );
 }
 if ( !defined( 'RCP_TAXAMO_PLUGIN_FILE' ) ) {
 	define( 'RCP_TAXAMO_PLUGIN_FILE', __FILE__ );
@@ -24,32 +24,30 @@ if ( !defined( 'RCP_TAXAMO_PLUGIN_VERSION' ) ) {
 
 class RCP_Taxamo {
 
-	private $taxamo_payments;
-
-	private $taxamo_admin;
-
-	private $taxamo_public;
+	private $payments, $admin, $public;
 
 	public function __construct() {
+
 		$this->includes();
-		$this->taxamo_payments = new RCP_Taxamo_Payments;
+		$this->payments = new RCP_Taxamo_Payments;
 		if(is_admin()) {
-			$this->taxamo_admin = new RCP_Taxamo_Admin;
+			$this->admin = new RCP_Taxamo_Admin;
 		}
 		else {
-			$this->taxamo_public = new RCP_Taxamo_Public;
+			$this->public = new RCP_Taxamo_Public;
 		}
+		
 	}
 
 	public function includes() {
 
-		require RCP_TAXAMO_PLUGIN_DIR . '/includes/class-rcp-taxamo-payments.php';
+		require RCP_TAXAMO_PLUGIN_DIR . 'includes/class-rcp-taxamo-payments.php';
 
 		if(is_admin()) {
-			require RCP_TAXAMO_PLUGIN_DIR . '/includes/class-rcp-taxamo-admin.php';
+			require RCP_TAXAMO_PLUGIN_DIR . 'includes/class-rcp-taxamo-admin.php';
 		}
 		else {
-			require RCP_TAXAMO_PLUGIN_DIR . '/includes/class-rcp-taxamo-public.php';
+			require RCP_TAXAMO_PLUGIN_DIR . 'includes/class-rcp-taxamo-public.php';
 		}
 		
 	}
