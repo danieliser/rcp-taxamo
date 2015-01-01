@@ -6,9 +6,30 @@ class RCP_Taxamo_Public {
 		add_action( 'wp_footer', array($this, 'initialize_taxamo_js'), 30 );
 
 		add_action( 'rcp_before_subscription_form_fields', array( $this, 'vat_fields' ) );
+		add_action( 'rcp_profile_editor_after', array( $this, 'vat_fields' ) );
+
+
+
+		// Process User Forms, Check For Errors, Update User Meta for Country & VAT #.
 		add_action( 'rcp_form_errors', array( $this, 'error_checks' ) );
 		add_filter( 'rcp_subscription_data', array( $this, 'subscription_data' ) );
+		add_action( 'rcp_user_profile_updated', array( $this, 'user_profile_update' ), 10, 2 );
 	}
+
+	public function user_profile_update( $user_id, $userdata ) {
+
+		$country = ! empty( $_POST['rcp_country'] ) ? sanitize_text_field( $_POST['rcp_country'] ) : '';
+		$vat_number   = ! empty( $_POST['rcp_vat_number'] )   ? sanitize_text_field( $_POST['rcp_vat_number'] ) : '';
+
+		if ( empty( $country ) ) {
+			rcp_errors()->add( 'empty_country', __( 'Please select a valid billing country', 'rcp-taxamo' ) );
+		}
+
+		update_user_meta( $user_id, 'rcp_country', $country );
+		update_user_meta( $user_id, 'rcp_vat_number', $vat_number );
+
+	}
+
 
 	public function scripts() {
 		global $rcp_options;
@@ -104,7 +125,6 @@ class RCP_Taxamo_Public {
 							if(taxamo_check) {
 								return;
 							}
-console.log(1);
 							event.preventDefault();
 
 							if (country.length && country.val() !== '') {
@@ -118,7 +138,7 @@ console.log(1);
 							if (card_number.length && card_number.val() !== '') {
 								transaction.buyerCardNumberPrefix(card_number.val().substring(0, 9))
 							}
-console.log(1);
+
 							transaction
 								.transactionLine('line1') //first line
 									.amount(parseInt(jQuery(priceClass, option).attr('taxamo-amount')))
@@ -130,7 +150,6 @@ console.log(1);
 							Taxamo.storeTransaction(
 								transaction,
 								function (data) { //success handler, you should place more complex logic here
-console.log(2);
 									jQuery('#rcp_taxamo_transaction_key').val(data.transaction.key);
 									jQuery('#rcp_taxamo_tax_supported').val(data.transaction.tax_supported);
 									jQuery('#rcp_taxamo_total_amount').val(data.transaction.total_amount);
@@ -147,8 +166,10 @@ console.log(2);
 		}
 	}
 
-	public function vat_fields( $id = NULL ) {
-		$user_id = get_current_user_id();
+	public function vat_fields( $user_id = NULL ) {
+		if( !$user_id ) {
+			$user_id = get_current_user_id();
+		}
 
 		$user_country = get_user_meta( $user_id, 'rcp_country', true );
 		$user_vat_number = get_user_meta( $user_id, 'rcp_vat_number', true );?>
