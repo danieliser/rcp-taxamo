@@ -27,6 +27,7 @@ class RCP_Taxamo_Public {
 			wp_enqueue_script( 'rcp-taxamo' );
 			wp_localize_script('rcp-taxamo', 'rcp_taxamo_vars', array(
 					'taxamo_public_token' => $rcp_options['taxamo_public_token'],
+					'tax_included' => !empty($rcp_options['taxamo_tax_included']) ? true : false,
 					'currency' => $rcp_options['currency'],
 					'priceTemplate' => !empty($rcp_options['taxamo_price_template']) ? $rcp_options['taxamo_price_template'] : __('${totalAmount} (${taxRate}% tax)', 'rcp-taxamo'),
 					'noTaxTitle' => !empty($rcp_options['taxamo_no_tax_title']) ? $rcp_options['taxamo_no_tax_title'] : __('No tax applied in this location', 'rcp-taxamo'),
@@ -50,6 +51,8 @@ class RCP_Taxamo_Public {
 		<fieldset class="rcp_vat_fieldset">
 			<input type="hidden" id="rcp_taxamo_tax_supported" name="rcp_taxamo_tax_supported" value=""/>
 			<input type="hidden" id="rcp_taxamo_transaction_key" name="rcp_taxamo_transaction_key" value=""/>
+			<input type="hidden" id="rcp_taxamo_amount" name="rcp_taxamo_amount" value=""/>
+			<input type="hidden" id="rcp_taxamo_tax_amount" name="rcp_taxamo_tax_amount" value=""/>
 			<input type="hidden" id="rcp_taxamo_total_amount" name="rcp_taxamo_total_amount" value=""/>
 			<p id="rcp_country_wrap">
 				<label for="rcp_country"><?php _e( 'Country', 'rcp-taxamo' ); ?></label>
@@ -82,11 +85,20 @@ class RCP_Taxamo_Public {
 		$subscription_data['country'] = sanitize_text_field( $_POST['rcp_country'] );
 		$subscription_data['vat_number'] = sanitize_text_field( $_POST['rcp_vat_number'] );
 		$subscription_data['taxamo_transaction_key'] = sanitize_text_field( $_POST['rcp_taxamo_transaction_key'] );
+		$subscription_data['taxamo_amount'] = sanitize_text_field( $_POST['rcp_taxamo_amount'] );
+		$subscription_data['taxamo_tax_amount'] = sanitize_text_field( $_POST['rcp_taxamo_tax_amount'] );
 		$subscription_data['taxamo_total_amount'] = sanitize_text_field( $_POST['rcp_taxamo_total_amount'] );
 
 		update_user_meta( $subscription_data['user_id'], 'rcp_vat_number', $subscription_data['vat_number'] );
 		update_user_meta( $subscription_data['user_id'], 'rcp_country', $subscription_data['country'] );
-		update_user_meta( $subscription_data['user_id'], 'rcp_taxamo_transaction_key', $subscription_data['taxamo_transaction_key'] );
+
+		$current_transaction_key = get_user_meta( $subscription_data['user_id'], 'rcp_taxamo_transaction_key', true );
+
+		if(!$current_transaction_key || $subscription_data['taxamo_transaction_key'] != $current_transaction_key) {
+			update_user_meta( $subscription_data['user_id'], 'rcp_taxamo_transaction_key', $subscription_data['taxamo_transaction_key'] );
+			add_user_meta( $subscription_data['user_id'], 'rcp_taxamo_transaction_key_new', true );
+
+		}
 
 		return $subscription_data;
 

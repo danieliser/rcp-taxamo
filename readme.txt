@@ -1,4 +1,4 @@
-=== RCP Taxamo ===
+=== Restrict Content Pro - Taxamo Integration ===
 Contributors: danieliser, mordauk
 Tags: Restrict Content Pro, Taxamo, VAT Taxes
 Requires at least: 3.0.1

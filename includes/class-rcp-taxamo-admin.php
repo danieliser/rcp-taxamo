@@ -15,8 +15,8 @@ class RCP_Taxamo_Admin {
 					<label for="rcp_settings[taxamo_public_token]"><?php _e( 'Public Token', 'rcp-taxamo' ); ?></label>
 				</th>
 				<td>
-					<input class="regular-text" id="rcp_settings[taxamo_public_token]" style="width: 300px;" name="rcp_settings[taxamo_public_token]" value="<?php echo !empty( $rcp_options['taxamo_public_token'] ) ? $rcp_options['taxamo_public_token'] : ''; ?>"/>
-					<div class="description"><?php _e( 'Enter your Taxamo public token.', 'rcp-taxamo' ); ?></div>
+					<input type="text" class="regular-text" id="rcp_settings[taxamo_public_token]" style="width: 300px;" name="rcp_settings[taxamo_public_token]" value="<?php echo !empty( $rcp_options['taxamo_public_token'] ) ? $rcp_options['taxamo_public_token'] : ''; ?>"/>
+					<p class="description"><?php _e( 'Enter your Taxamo public token.', 'rcp-taxamo' ); ?></p>
 				</td>
 			</tr>
 			<tr valign="top">
@@ -24,8 +24,20 @@ class RCP_Taxamo_Admin {
 					<label for="rcp_settings[taxamo_private_token]"><?php _e( 'Private Token', 'rcp-taxamo' ); ?></label>
 				</th>
 				<td>
-					<input class="regular-text" id="rcp_settings[taxamo_private_token]" style="width: 300px;" name="rcp_settings[taxamo_private_token]" value="<?php echo !empty( $rcp_options['taxamo_private_token'] ) ? $rcp_options['taxamo_private_token'] : ''; ?>"/>
-					<div class="description"><?php _e( 'Enter your Taxamo private token.', 'rcp-taxamo' ); ?></div>
+					<input type="text" class="regular-text" id="rcp_settings[taxamo_private_token]" style="width: 300px;" name="rcp_settings[taxamo_private_token]" value="<?php echo !empty( $rcp_options['taxamo_private_token'] ) ? $rcp_options['taxamo_private_token'] : ''; ?>"/>
+					<p class="description"><?php _e( 'Enter your Taxamo private token.', 'rcp-taxamo' ); ?></p>
+				</td>
+			</tr>
+			<tr valign="top">
+				<th>
+					<label for="rcp_settings[taxamo_tax_included]"><?php _e( 'Tax Included for New Purchases?', 'rcp-taxamo' ); ?></label>
+				</th>
+				<td>
+					<label>
+						<input type="checkbox" id="rcp_settings[taxamo_tax_included]" name="rcp_settings[taxamo_tax_included]" <?php echo !empty( $rcp_options['taxamo_tax_included'] ) ? 'checked="checked"' : ''; ?>/>
+						<?php _e( 'If checked taxes will be subtracted from the total rather than added to it.', 'rcp-taxamo' ); ?>
+					</label>
+					<p class="description"><?php _e( 'EX. $10 Subscription: With Tax Included ($10), Without ($10 + $2 Tax).', 'rcp-taxamo' ); ?></p>
 				</td>
 			</tr>
 			<tr valign="top">
@@ -33,8 +45,8 @@ class RCP_Taxamo_Admin {
 					<label for="rcp_settings[taxamo_price_template]"><?php _e( 'Price Template', 'rcp-taxamo' ); ?></label>
 				</th>
 				<td>
-					<input class="regular-text" id="rcp_settings[taxamo_price_template]" style="width: 300px;" name="rcp_settings[taxamo_price_template]" value="<?php echo !empty( $rcp_options['taxamo_price_template'] ) ? $rcp_options['taxamo_price_template'] : ''; ?>"/>
-					<div class="description"><?php _e( 'Description Coming Soon.', 'rcp-taxamo' ); ?></div>
+					<input type="text" class="regular-text" id="rcp_settings[taxamo_price_template]" style="width: 300px;" name="rcp_settings[taxamo_price_template]" value="<?php echo !empty( $rcp_options['taxamo_price_template'] ) ? $rcp_options['taxamo_price_template'] : ''; ?>"/>
+					<p class="description"><?php _e( 'Description Coming Soon.', 'rcp-taxamo' ); ?></p>
 				</td>
 			</tr>
 			<tr valign="top">
@@ -42,8 +54,8 @@ class RCP_Taxamo_Admin {
 					<label for="rcp_settings[taxamo_no_tax_title]"><?php _e( 'No Tax Applied Title', 'rcp-taxamo' ); ?></label>
 				</th>
 				<td>
-					<input class="regular-text" id="rcp_settings[taxamo_no_tax_title]" style="width: 300px;" name="rcp_settings[taxamo_no_tax_title]" value="<?php echo !empty( $rcp_options['taxamo_no_tax_title'] ) ? $rcp_options['taxamo_no_tax_title'] : ''; ?>"/>
-					<div class="description"><?php _e( 'Description Coming Soon.', 'rcp-taxamo' ); ?></div>
+					<input type="text" class="regular-text" id="rcp_settings[taxamo_no_tax_title]" style="width: 300px;" name="rcp_settings[taxamo_no_tax_title]" value="<?php echo !empty( $rcp_options['taxamo_no_tax_title'] ) ? $rcp_options['taxamo_no_tax_title'] : ''; ?>"/>
+					<p class="description"><?php _e( 'Description Coming Soon.', 'rcp-taxamo' ); ?></p>
 				</td>
 			</tr>
 			<tr valign="top">
@@ -51,8 +63,8 @@ class RCP_Taxamo_Admin {
 					<label for="rcp_settings[taxamo_tax_title]"><?php _e( 'Tax Applied Title', 'rcp-taxamo' ); ?></label>
 				</th>
 				<td>
-					<input class="regular-text" id="rcp_settings[taxamo_tax_title]" style="width: 300px;" name="rcp_settings[taxamo_tax_title]" value="<?php echo !empty( $rcp_options['taxamo_tax_title'] ) ? $rcp_options['taxamo_tax_title'] : ''; ?>"/>
-					<div class="description"><?php _e( 'Description Coming Soon.', 'rcp-taxamo' ); ?></div>
+					<input type="text" class="regular-text" id="rcp_settings[taxamo_tax_title]" style="width: 300px;" name="rcp_settings[taxamo_tax_title]" value="<?php echo !empty( $rcp_options['taxamo_tax_title'] ) ? $rcp_options['taxamo_tax_title'] : ''; ?>"/>
+					<p class="description"><?php _e( 'Description Coming Soon.', 'rcp-taxamo' ); ?></p>
 				</td>
 			</tr>
 		</table><?php
