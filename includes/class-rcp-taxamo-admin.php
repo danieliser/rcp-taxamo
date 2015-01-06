@@ -1,10 +1,17 @@
 <?php
 
+/**
+* Sets up admin functionality for the RCP Taxamo extension, including settings.
+*/
 class RCP_Taxamo_Admin {
 	public function __construct() {
 		add_action( 'rcp_payments_settings', array($this, 'settings_fields') );
 		add_action( 'rcp_view_member_after', array( $this, 'member_details' ) ); 
 	}
+
+	/**
+	* Render the settings fields for taxamo configuration.
+	*/
 	public function settings_fields( $rcp_options ) { ?>
 		<table class="form-table">
 			<tr valign="top">
@@ -70,6 +77,9 @@ class RCP_Taxamo_Admin {
 		</table><?php
 	}
 
+	/**
+	* Render the country field for member details.
+	*/
 	public function member_details( $user_id ) {
 		$country = get_user_meta( $user_id, 'rcp_country', true );
 		$countries = $this->get_contries();

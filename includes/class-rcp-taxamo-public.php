@@ -1,5 +1,8 @@
 <?php
 
+/**
+* Sets up public functionality for the RCP Taxamo extension, including form fields and script loading.
+*/
 class RCP_Taxamo_Public {
 
 	public function __construct() {

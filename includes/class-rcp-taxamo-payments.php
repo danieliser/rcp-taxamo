@@ -7,18 +7,16 @@ class RCP_Taxamo_Payments {
 
 		// Sends all payments to Taxamo. Reguardless of tax.
 		add_action( 'rcp_insert_payment', array( $this, 'track_payment' ), 10, 3 );
-
 		add_action( 'rcp_stripe_invoice.created', array( $this, 'stripe_recurring_tax_invoice_item' ) );
 	}
-
 
 	/**
 	* Processed when invoices are created, open and contain a subscription ID.
 	* This only occurs during follow up subscription payments.
 	*/
 	public function stripe_recurring_tax_invoice_item( $invoice ) {
-		global $rcp_options;
 
+		global $rcp_options;
 		$user = rcp_stripe_get_user_id( $invoice->customer );
 		$transaction_key = get_user_meta( $user_id, 'rcp_taxamo_transaction_key', true );
 		$subscription_id = rcp_get_subscription_id( 1 );
@@ -35,9 +33,16 @@ class RCP_Taxamo_Payments {
 		* Initiate Taxamo API.
 		*/
 		$taxamo = $this->taxamo_api();
-		$existing_transaction = $taxamo->getTransaction( 'THC4AAAggUkWsHx0Y8UFUpdIkLB4' );
+
+		/**
+		* Get existing transaction information.
+		*/
+		$existing_transaction = $taxamo->getTransaction( $transaction_key );
 		$existing_transaction = $existing_transaction->transaction;
 
+		/**
+		* Build a new empty transaction for tax calculation.
+		*/
 		$lines = array();
 		foreach($existing_transaction->transaction_lines as $line) {
 			$transaction_line = new input_transaction_line();
@@ -46,7 +51,6 @@ class RCP_Taxamo_Payments {
 			$lines[] = $transaction_line;
 		}
 
-
 		$transaction = new input_transaction();
 		$transaction->currency_code = $rcp_options['currency'];
 		$transaction->buyer_ip = $existing_transaction->buyer_ip;
@@ -54,10 +58,15 @@ class RCP_Taxamo_Payments {
 		$transaction->force_country_code = $existing_transaction->tax_country_code;
 		$transaction->transaction_lines = $lines;
 
-		$resp = $taxamo->calculateTax(array('transaction' => $transaction));
+		/**
+		* Calculate the tax for the new transaction.
+		*/
+		$tax_calc = $taxamo->calculateTax(array('transaction' => $transaction));
+		$tax_amount = floatval($tax_calc->transaction->tax_amount);
 
-		$tax_amount = floatval($resp->transaction->tax_amount);
-
+		/**
+		* If no tax or tax was included in original total return.
+		*/
 		if($tax_amount <= 0 || (!empty($rcp_options['taxamo_tax_included']) && $rcp_options['taxamo_tax_included'])) {
 			return;
 		}
@@ -81,6 +90,7 @@ class RCP_Taxamo_Payments {
 	* This only occurs during the first subscription payment.
 	*/
 	public function stripe_signup_tax_invoice_item( $customer, $subscription_data ) {
+
 		global $rcp_options;
 		$tax_amount = floatval($subscription_data['taxamo_tax_amount']);
 
@@ -106,16 +116,29 @@ class RCP_Taxamo_Payments {
 				'description' => __('VAT Taxes', 'rcp-taxamo'),
 			)
 		);
-	}
+		
+		/**
+		* If no subscription fee then pay invoice immediately.
+		*/
+		if ( empty( $subscription_data['fee'] ) || $subscription_data['fee'] <= 0 ) {
 
+			// Create the invoice containing taxes
+			$invoice = Stripe_Invoice::create( array(
+					'customer' => $customer->id,
+				) );
+			$invoice->pay();
+
+		}
+
+	}
 
 	/**
 	* Filters the Paypal Standard Payment arguments before the redirect to paypal checkout.
 	*/
 	public function paypal_args( $paypal_args, $subscription_data ) {
+
 		global $rcp_options;
 		$paypal_args['country'] = $subscription_data['country'];
-
 		$tax_amount = floatval($subscription_data['taxamo_tax_amount']);
 		$total_amount = floatval($subscription_data['taxamo_total_amount']);
 
@@ -131,65 +154,38 @@ class RCP_Taxamo_Payments {
 			return $paypal_args;
 		}
 
-		// Set recurring payment amounts.
+		/**
+		* Set recurring payment amounts.
+		*/
 		if( $subscription_data['auto_renew'] && ! empty( $subscription_data['length'] ) ) {
 
-			// Regular Subscription Price with Vat Tax
+			/**
+			* Modified Subscription Price with Vat Tax Added
+			*/
 			$paypal_args['a3'] = $total_amount;
 
-			// Adjust first payment to include tax.
+			/**
+			* Adjust first payment to include tax.
+			*/
 			if( ! empty( $subscription_data['fee'] ) ) {
 				$paypal_args['a1'] = number_format( $subscription_data['fee'] + $total_amount, 2 );
 			}
 
 		}
-		// Set single payment amount.
+		/**
+		* Set single payment amount.
+		*/
 		else {
 			$paypal_args['amount'] = $total_amount;
 		}
+
 		return $paypal_args;
+
 	} 
 
-
-
-
-	public function track_payment( $payment_id, $args, $amount ) {
-		global $rcp_options;
-
-		$user_id         = $args['user_id'];
-		$transaction_key = get_user_meta( $user_id, 'rcp_taxamo_transaction_key', true );
-
-		if(!$transaction_key || $transaction_key == '') {
-			return;
-		}
-
-		if( $args['payment_type'] == 'web_accept' || $args['payment_type'] == 'subscr_payment' ) {
-			$gateway = 'Paypal';
-		}
-		elseif( $args['payment_type'] == 'Credit Card') {
-			$gateway = 'Stripe';
-		}
-
-		/**
-		* Prepare payment data for Taxamo.
-		*/
-		$payment_data = array(
-			'amount'              => floatval($amount),
-			'payment_information' => 'Gateway: ' . $gateway . '; SubscriptionID: ' . $args['subscription_key'] . '; PaymentID: ' . $payment_id . ';',
-		);
-
-		/**
-		* Initiate Taxamo API.
-		*/
-		$taxamo = $this->taxamo_api();
-
-		/**
-		* Add payment to Taxamo.
-		*/
-		$payment = $taxamo->createPayment($transaction_key, $payment_data);
-	}
-
-
+	/**
+	* Returns the taxamo API class. Instantiates the Taxamo API if not already.
+	*/
 	public function taxamo_api() {
 		global $rcp_options;
 		if(!isset($this->taxamo_api)) {
@@ -201,7 +197,9 @@ class RCP_Taxamo_Payments {
 		return $this->taxamo_api;
 	}
 
-
+	/**
+	* Confirms a transaction prior to payment.
+	*/
 	public function confirm_transaction( $subscription_data ) {
 		global $rcp_options;
 
@@ -232,5 +230,50 @@ class RCP_Taxamo_Payments {
 		}
 	}
 
+	/**
+	* Track Individual Payments in Taxamo.
+	*/
+	public function track_payment( $payment_id, $args, $amount ) {
+
+		global $rcp_options;
+		$user_id         = $args['user_id'];
+		$transaction_key = get_user_meta( $user_id, 'rcp_taxamo_transaction_key', true );
+
+		/**
+		* Return if no transaction key exists.
+		*/
+		if(!$transaction_key || $transaction_key == '') {
+			return;
+		}
+
+		/**
+		* Set Payment Gateway based on payment_type.
+		*/
+		if( $args['payment_type'] == 'web_accept' || $args['payment_type'] == 'subscr_payment' ) {
+			$gateway = 'Paypal';
+		}
+		elseif( $args['payment_type'] == 'Credit Card') {
+			$gateway = 'Stripe';
+		}
+
+		/**
+		* Prepare payment data for Taxamo.
+		*/
+		$payment_data = array(
+			'amount'              => floatval($amount),
+			'payment_information' => 'Gateway: ' . $gateway . '; SubscriptionID: ' . $args['subscription_key'] . '; PaymentID: ' . $payment_id . ';',
+		);
+
+		/**
+		* Initiate Taxamo API.
+		*/
+		$taxamo = $this->taxamo_api();
+
+		/**
+		* Add payment to Taxamo.
+		*/
+		$payment = $taxamo->createPayment($transaction_key, $payment_data);
+
+	}
 
 }
