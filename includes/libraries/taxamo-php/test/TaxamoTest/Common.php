@@ -1,8 +1,10 @@
 <?php
+
 abstract class TaxamoTestCase extends UnitTestCase {
    function getApi() {
-        $swagger = new APIClient('SamplePrivateTestKey1', 'https://api.taxamo.com');
-        return new Taxamo($swagger);
+        $swagger = new Taxamo\APIClient('SamplePrivateTestKey1', 'https://api.taxamo.com');
+        $swagger->sourceId = "TaxamoTestPHP/2.0.3";
+        return new Taxamo\Taxamo($swagger);
    }
 }
 ?>

@@ -1,4 +1,4 @@
-<?php
+<?php namespace Taxamo;
 /**
  * Swagger.php
  */
@@ -10,8 +10,18 @@
  *
  * @param string $className the class to attempt to load
  */
+
+function startsWith($haystack, $needle) {
+    return $needle === "" || strrpos($haystack, $needle, -strlen($haystack)) !== FALSE;
+}
+
 function swagger_autoloader($className) {
 	$currentDir = dirname(__FILE__);
+	if (!startsWith($className, "Taxamo\\")) {
+	    return;
+	}
+    $className = str_replace("Taxamo\\", "", $className);
+
 	if (file_exists($currentDir . '/models/' . lcfirst($className) . '.php')) {
         include $currentDir . '/models/' . lcfirst($className) . '.php';
     } elseif (file_exists($currentDir . '/' . lcfirst($className) . '.php')) {
@@ -22,7 +32,7 @@ function swagger_autoloader($className) {
 		include $currentDir . '/models/' . $className . '.php';
 	}
 }
-spl_autoload_register('swagger_autoloader');
+spl_autoload_register('Taxamo\\swagger_autoloader');
 
 
 class APIClient {
@@ -31,6 +41,8 @@ class APIClient {
 	public static $GET = "GET";
 	public static $PUT = "PUT";
 	public static $DELETE = "DELETE";
+
+    public $sourceId = "taxamo-php/2.0.4";
 
 	/**
 	 * @param string $apiKey your API key
@@ -56,17 +68,24 @@ class APIClient {
 		$headers = array();
 
         # Allow API key from $headerParams to override default
-        $added_api_key = False;
+        $added_api_key   = False;
+        $added_source_id = False;
 		if ($headerParams != null) {
 			foreach ($headerParams as $key => $val) {
 				$headers[] = "$key: $val";
 				if ($key == 'token') {
 				    $added_api_key = True;
 				}
+				if ($key == 'source-id') {
+				    $added_source_id = True;
+				}
 			}
 		}
 		if (! $added_api_key) {
 		    $headers[] = "Token: " . $this->apiKey;
+		}
+		if (! $added_source_id) {
+            $headers[] = "Source-Id: " . $this->sourceId;
 		}
 
 		if (is_object($postData) or is_array($postData)) {
@@ -76,7 +95,7 @@ class APIClient {
 		$url = $this->apiServer . $resourcePath;
 
 		$curl = curl_init();
-		curl_setopt($curl, CURLOPT_TIMEOUT, 5);
+		curl_setopt($curl, CURLOPT_TIMEOUT, 30);
 		// return the result on success, rather than just TRUE
 		curl_setopt($curl, CURLOPT_RETURNTRANSFER, true);
 		curl_setopt($curl, CURLOPT_HTTPHEADER, $headers);
@@ -108,8 +127,8 @@ class APIClient {
 
 		// Handle the response
 		if ($response_info['http_code'] == 0) {
-			throw new TaxamoAPIException("TIMEOUT: api call to " . $url .
-				" took more than 5s to return",
+			throw new TaxamoAPIException("Failed to connect to " . $url . " curl_error: "
+			    . curl_error($curl),
 				$postData,
 				$response_info);
 		} else if ($response_info['http_code'] == 200) {
@@ -134,7 +153,6 @@ class APIClient {
                         $data->errors,
                         $data->validation_failures);
             } else {
-                var_dump($data->errors);
                 throw new TaxamoValidationException("Validation error for " . $url .
                         ": ".$response."post data:".$postData,
                         $postData,
@@ -251,6 +269,7 @@ class APIClient {
       settype($data, $class);
       $deserialized = $data;
     } else {
+      $class = "Taxamo\\".$class;
       $instance = new $class();
       foreach ($instance::$swaggerTypes as $property => $type) {
         if (isset($data->$property)) {
@@ -265,7 +284,7 @@ class APIClient {
 
 }
 
-class TaxamoAPIException extends Exception {
+class TaxamoAPIException extends \Exception {
     public $post_data;
     public $response;
 

@@ -1,4 +1,4 @@
-<?php
+<?php namespace Taxamo;
 /**
  *  Copyright 2014 Taxamo, Ltd.
  *
@@ -27,25 +27,30 @@ class CreateRefundIn {
       'line_key' => 'string',
       'custom_id' => 'string',
       'amount' => 'number',
-      'total_amount' => 'number'
+      'total_amount' => 'number',
+      'refund_reason' => 'string'
 
     );
 
   /**
-  * Line identifier. Either line key or custom id is required.
+  * Line identifier. If neither line key or custom id is provided, the refund amount will be assigned to lines in order.
   */
   public $line_key; // string
   /**
-  * Line custom identifier. Either line key or custom id is required.
+  * Line custom identifier. If neither line key or custom id is provided, the refund amount will be assigned to lines in order.
   */
   public $custom_id; // string
   /**
-  * Amount (without tax) to be refunded. Either amount or total amount is required.
+  * Amount (without tax) to be refunded. Either amount or total amount is required. In case of line key and custom id missing, only total_amount can be used.
   */
   public $amount; // number
   /**
-  * Total amount, including tax, to be refunded. Either amount or total amount is required.
+  * Total amount, including tax, to be refunded. Either amount or total amount is required. In case of line key and custom id missing, only total_amount can be used.
   */
   public $total_amount; // number
+  /**
+  * Refund reason, displayed on the credit note.
+  */
+  public $refund_reason; // string
   }
 
