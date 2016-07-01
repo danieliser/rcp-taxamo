@@ -1,4 +1,4 @@
-<?php
+<?php namespace Taxamo;
 /**
  *  Copyright 2014 Taxamo, Ltd.
  *
@@ -60,7 +60,7 @@ class Invoice_address {
   */
   public $postal_code; // string
   /**
-  * Region.
+  * Region, for United States - state code - e.g. NJ.
   */
   public $region; // string
   /**

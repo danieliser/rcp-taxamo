@@ -1,4 +1,4 @@
-<?php
+<?php namespace Taxamo;
 /**
  *  Copyright 2014 Taxamo, Ltd.
  *
@@ -30,7 +30,7 @@ class CreateTransactionIn {
     );
 
   /**
-  * Use manual mode, bypassing country detection. Only allowed with private token.
+  * Use manual mode, bypassing country detection. Only allowed with private token. This flag allows to use original_transaction_key field
   */
   public $manual_mode; // bool
   /**
