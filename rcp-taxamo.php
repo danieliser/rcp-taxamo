@@ -6,6 +6,8 @@ Description: Integrate Restrict Content Pro with Taxamo service for VAT storage 
 Version: 1.0.0
 Author: Daniel Iser
 Author URI: http://danieliser.com
+Text Domain: rcp-taxamo
+Domain Path: /languages/
 Contributors: danieliser, mordauk
 */
 
@@ -66,3 +68,35 @@ function rcp_taxamo() {
 	return $rcp_taxamo;
 }
 add_action('plugins_loaded', 'rcp_taxamo');
+
+/**
+* Load plugin text domain for translations
+*/
+function rcp_taxamo_load_textdomain() {
+
+	// Set filter for plugin's languages directory
+	$rcp_taxamo_lang_dir = dirname( plugin_basename( RCP_TAXAMO_PLUGIN_FILE ) ) . '/languages/';
+	$rcp_taxamo_lang_dir = apply_filters( 'rcp_taxamo_languages_directory', $rcp_taxamo_lang_dir );
+
+
+	// Traditional WordPress plugin locale filter
+	$locale        = apply_filters( 'plugin_locale',  get_locale(), 'rcp-taxamo' );
+	$mofile        = sprintf( '%1$s-%2$s.mo', 'rcp-taxamo', $locale );
+
+	// Setup paths to current locale file
+	$mofile_local  = $rcp_taxamo_lang_dir . $mofile;
+	$mofile_global = WP_LANG_DIR . '/rcp-taxamo/' . $mofile;
+
+	if ( file_exists( $mofile_global ) ) {
+		// Look in global /wp-content/languages/rcp-taxamo folder
+		load_textdomain( 'rcp-taxamo', $mofile_global );
+	} elseif ( file_exists( $mofile_local ) ) {
+		// Look in local /wp-content/plugins/rcp-taxamo/languages/ folder
+		load_textdomain( 'rcp-taxamo', $mofile_local );
+	} else {
+		// Load the default language files
+		load_plugin_textdomain( 'rcp-taxamo', false, $rcp_taxamo_lang_dir );
+	}
+
+}
+add_action( 'init', 'rcp_taxamo_load_textdomain' );
